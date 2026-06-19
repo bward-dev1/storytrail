@@ -1,40 +1,18 @@
 import NavBar from "@/components/NavBar";
-import BookCard from "@/components/BookCard";
 import ReadingStreak from "@/components/ReadingStreak";
+import LibraryClient from "@/components/LibraryClient";
+import { listBooks } from "@/lib/books/queries";
 
-// TODO: swap mock data for `lib/books/queries.ts` once Supabase is wired.
-const MOCK_BOOKS = [
-  {
-    id: "1",
-    title: "The Wild Robot",
-    author: "Peter Brown",
-    coverUrl: null,
-    rating: 5,
-  },
-  {
-    id: "2",
-    title: "Amari and the Night Brothers",
-    author: "B. B. Alston",
-    coverUrl: null,
-    rating: 4,
-  },
-  {
-    id: "3",
-    title: "The Last Cuentista",
-    author: "Donna Barba Higuera",
-    coverUrl: null,
-    rating: null,
-  },
-  {
-    id: "4",
-    title: "Restart",
-    author: "Gordon Korman",
-    coverUrl: null,
-    rating: 3,
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function LibraryPage() {
+export default async function LibraryPage() {
+  let books: Awaited<ReturnType<typeof listBooks>> = [];
+  try {
+    books = await listBooks();
+  } catch {
+    books = [];
+  }
+
   return (
     <>
       <NavBar />
@@ -49,11 +27,7 @@ export default function LibraryPage() {
           <ReadingStreak days={7} />
         </header>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {MOCK_BOOKS.map((b) => (
-            <BookCard key={b.id} {...b} />
-          ))}
-        </div>
+        <LibraryClient initialBooks={books} />
       </main>
     </>
   );
