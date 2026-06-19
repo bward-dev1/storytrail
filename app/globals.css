@@ -1,0 +1,42 @@
+/* Brand tokens – mirrored from KiddReads marketing.css. */
+@import "tailwindcss";
+
+@theme {
+  --color-kr-blue: #4A90E2;
+  --color-kr-deep: #4A00E0;
+  --color-kr-purple: #764BA2;
+  --color-kr-peri: #667EEA;
+  --color-kr-gold: #F5A623;
+  --color-kr-ink: #2D3436;
+  --color-kr-muted: #636E72;
+  --color-kr-bg: #F7F8FC;
+  --color-kr-banner: #1B1235;
+
+  --font-sans: "Nunito", system-ui, sans-serif;
+}
+
+:root {
+  --kr-blue: #4A90E2;
+  --kr-deep: #4A00E0;
+  --kr-purple: #764BA2;
+  --kr-peri: #667EEA;
+  --kr-gold: #F5A623;
+  --kr-ink: #2D3436;
+  --kr-muted: #636E72;
+  --kr-bg: #F7F8FC;
+}
+
+html,
+body {
+  background: var(--kr-bg);
+  color: var(--kr-ink);
+  font-family: var(--font-sans);
+}
+
+.cta-gradient {
+  background-image: linear-gradient(135deg, var(--kr-blue), var(--kr-deep));
+}
+
+.hero-gradient {
+  background-image: linear-gradient(135deg, var(--kr-peri), var(--kr-purple), var(--kr-deep));
+}
