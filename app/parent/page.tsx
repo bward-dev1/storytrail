@@ -1,13 +1,33 @@
 import NavBar from "@/components/NavBar";
-import ParentApprovalBadge from "@/components/ParentApprovalBadge";
+import ApprovalsClient from "@/components/ApprovalsClient";
+import { createClient } from "@/lib/supabase/server";
 
-const MOCK_QUEUE = [
-  { id: "a1", child: "Stella", subject: "Add book: Restart", state: "pending" },
-  { id: "a2", child: "Stella", subject: "Rate The Wild Robot 5★", state: "pending" },
-  { id: "a3", child: "Stella", subject: "Mark Amari finished", state: "approved" },
-];
+export const dynamic = "force-dynamic";
 
-export default function ParentPage() {
+type Approval = {
+  id: string;
+  child_id: string;
+  parent_id: string | null;
+  action: "request" | "approve" | "deny";
+  subject: string;
+  payload: Record<string, unknown> | null;
+  resolved_at: string | null;
+};
+
+export default async function ParentPage() {
+  let approvals: Approval[] = [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("approvals")
+      .select("id,child_id,parent_id,action,subject,payload,resolved_at")
+      .order("action", { ascending: true })
+      .limit(50);
+    approvals = (data ?? []) as Approval[];
+  } catch {
+    approvals = [];
+  }
+
   return (
     <>
       <NavBar />
@@ -17,22 +37,7 @@ export default function ParentPage() {
           Approve what your child wants to read, see their progress.
         </p>
 
-        <ul className="divide-y divide-kr-muted/10 rounded-2xl bg-white shadow-sm">
-          {MOCK_QUEUE.map((row) => (
-            <li key={row.id} className="p-4 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-kr-ink">{row.subject}</p>
-                <p className="text-sm text-kr-muted">for {row.child}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <ParentApprovalBadge state={row.state as "pending" | "approved"} />
-                <button className="text-sm cta-gradient text-white rounded-lg px-3 py-1">
-                  Approve
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <ApprovalsClient initial={approvals} />
       </main>
     </>
   );
