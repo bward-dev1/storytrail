@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import BookCard from "@/components/BookCard";
 import FilterPills from "@/components/FilterPills";
+import { track } from "@/lib/analytics/events";
 
 type Book = {
   id: string;
@@ -44,10 +45,13 @@ export default function LibraryClient({ initialBooks }: { initialBooks: Book[] }
           type="search"
           placeholder="Search by title or author"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (e.target.value.length === 3) track("library_search", { q: e.target.value });
+          }}
           className="w-full sm:max-w-sm border border-kr-muted/20 rounded-lg px-3 py-2"
         />
-        <FilterPills levels={READING_LEVELS} active={level} onChange={setLevel} />
+        <FilterPills levels={READING_LEVELS} active={level} onChange={(l) => { track("library_filter", { level: l }); setLevel(l); }} />
       </div>
 
       {filtered.length ? (
