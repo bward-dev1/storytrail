@@ -1,14 +1,40 @@
 import NavBar from "@/components/NavBar";
 import ReadingStreak from "@/components/ReadingStreak";
-import LibraryClient from "@/components/LibraryClient";
-import { listBooks } from "@/lib/books/queries";
+import { createClient } from "@/lib/supabase/server";
+import { streakDays } from "@/lib/progress/calc";
 
 export const dynamic = "force-dynamic";
 
 export default async function LibraryPage() {
-  let books: Awaited<ReturnType<typeof listBooks>> = [];
+  let books: Awaited<ReturnType<typeof import("@/lib/books/queries").listBooks>> = [];
+  let streak = 0;
   try {
-    books = await listBooks();
+    const supabase = await createClient();
+    const { data: bookRows } = await supabase
+      .from("books")
+      .select("id,title,author,cover_url,lexile,page_count")
+      .order("title", { ascending: true });
+    books = bookRows ?? [];
+
+    const { data: child } = await supabase
+      .from("children")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
+    if (child?.id) {
+      const { data: progressRows } = await supabase
+        .from("progress")
+        .select("status,pages_read,rating,started_at,finished_at")
+        .eq("child_id", child.id);
+      streak = streakDays(
+        (progressRows ?? []).map((p) => ({
+          ...p,
+          child_id: child.id!,
+          book_id: "",
+          id: "",
+        }))
+      );
+    }
   } catch {
     books = [];
   }
@@ -24,11 +50,16 @@ export default async function LibraryPage() {
               Every book you&apos;ve read, are reading, or want to read.
             </p>
           </div>
-          <ReadingStreak days={7} />
+          <ReadingStreak days={streak} />
         </header>
 
-        <LibraryClient initialBooks={books} />
+        <LibraryFeed initialBooks={books} />
       </main>
     </>
   );
+}
+
+import LibraryClient from "@/components/LibraryClient";
+function LibraryFeed({ initialBooks }: { initialBooks: Awaited<ReturnType<typeof import("@/lib/books/queries").listBooks>> }) {
+  return <LibraryClient initialBooks={initialBooks} />;
 }

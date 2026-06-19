@@ -1,5 +1,8 @@
 import NavBar from "@/components/NavBar";
-import ReadingStreak from "@/components/ReadingStreak";
+import ProgressClient from "@/components/ProgressClient";
+import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 export default async function BookDetailPage({
   params,
@@ -7,20 +10,31 @@ export default async function BookDetailPage({
   params: Promise<{ bookId: string }>;
 }) {
   const { bookId } = await params;
-  const supabase = (await import("@/lib/supabase/server")).createClient;
-  const client = await supabase();
+  const supabase = await createClient();
 
-  const { data: book } = await client
+  const { data: book } = await supabase
     .from("books")
     .select("id,title,author,page_count,lexile,cover_url")
     .eq("id", bookId)
     .maybeSingle();
 
-  const { data: progress } = await client
-    .from("progress")
-    .select("status,pages_read,rating")
-    .eq("book_id", bookId)
+  // For S2 we use the signed-in child. Until auth is wired, fall back to the
+  // first child in the household so the UI is exercisable.
+  const { data: child } = await supabase
+    .from("children")
+    .select("id")
+    .limit(1)
     .maybeSingle();
+  const childId = child?.id ?? null;
+
+  const { data: progress } = childId
+    ? await supabase
+        .from("progress")
+        .select("status,pages_read,rating")
+        .eq("book_id", bookId)
+        .eq("child_id", childId)
+        .maybeSingle()
+    : { data: null };
 
   return (
     <>
@@ -49,15 +63,17 @@ export default async function BookDetailPage({
                 {book.page_count ?? "?"} pages · Lexile {book.lexile ?? "?"}
               </p>
 
-              {progress?.status ? (
-                <p className="mt-4 text-sm text-kr-deep">
-                  Current status: <span className="font-semibold">{progress.status}</span>
+              {childId ? (
+                <ProgressClient
+                  bookId={book.id}
+                  childId={childId}
+                  initial={progress ?? null}
+                />
+              ) : (
+                <p className="mt-6 text-sm text-kr-muted">
+                  Sign in as a child to log progress.
                 </p>
-              ) : null}
-
-              <div className="mt-6">
-                <ReadingStreak days={0} />
-              </div>
+              )}
             </div>
           </div>
         )}
